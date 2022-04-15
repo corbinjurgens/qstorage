@@ -1,0 +1,33 @@
+{
+    "name": "corbinjurgens/qstorage",
+    "description": "Use Laravel Storage Filesystem in an object oriented fashion",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Corbin Jurgens",
+            "email": "corbinjurgens@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "laravel/framework": ">=5.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Corbinjurgens\\QStorage\\": "src/"
+        },
+        "files": [
+        ]
+    },
+	"extra": {
+    "laravel": {
+        "providers": [
+            "Corbinjurgens\\QStorage\\ServiceProvider"
+        ],
+        "aliases": {
+			"QForm": "Corbinjurgens\\QStorage\\Facade"
+        }
+    }
+}
+}
