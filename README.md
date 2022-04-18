@@ -23,7 +23,14 @@ if ($file->exists()){
 }
 ```
 
-## Manual Installation
+
+## Installation
+
+### Composer
+
+composer require corbinjurgens/qstorage
+
+### Manual Installation
 
 Copy the following to main composer.(in the case that the package is added to packages/corbinjurgens/qform)
 ```
@@ -56,12 +63,12 @@ For example `Storage::get('folder/file.txt')` becomes `QStorage::path('folder/fi
 
 > As you may see here the usual 'path' function has been overridden to specify which path an instance is pointing to. The original path method is accessed by 'absolutePath'
 
-Using 'path' sets the current instance, but you can also use 'open' to open a new instance relative to the current instance and then set the new path. For example
+Using 'path' sets the current instance, but you can also use 'open', 'file' or 'folder' (all have the same effect) to open a new instance relative to the current instance and then set the new path. For example
 
 ```
-$disk = QStorage::path('folder');// 'folder', path is unaffected by the following lines
-$file = $disk->open('file.txt');// 'folder/file.txt'
-$file1 = $disk->open('file2.txt');// 'folder/file2.txt'
+$disk = QStorage::folder('folder');// 'folder', path is unaffected by the following lines
+$file = $disk->file('file.txt');// 'folder/file.txt'
+$file1 = $disk->file('file2.txt');// 'folder/file2.txt'
 ```
 
 > Under the hood this makes use of the 'sub' feature. By opening file or folder with a path already set, it uses the current path as a prefix and builds off that. You can achive the same result by using `QStorage::sub('folder')->path('file.txt')`
@@ -78,3 +85,5 @@ foreach($files as $file){
 ```
 
 > The original 'path' function which returned the absolute file path has been replaced with three different functions: absolutePath (same behaviour as original path) relativepath (path relative to the disk) and leafPath (path in the current 'sub' context ie. within current folder etc)
+
+If you need to access the underlying disk instance, you can use 'getDisk', eg `QStorage::disk('data')->getDisk()->...`
