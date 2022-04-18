@@ -33,32 +33,6 @@ class QStorage {
 		return new static($disk);
 	}
 
-	protected $sub = '';
-
-	public function sub(string $path = ''){
-		$this->sub = static::trimPath($path);
-		return $this;
-	}
-
-	protected $path = '';
-
-	public function path(string $path = ''){
-		$this->path = static::trimPath($path);
-		return $this;
-	}
-
-	public function relativePath(){
-		return static::joinPaths([$this->sub, $this->path]);
-	}
-
-	public function absolutePath(){
-		return $this->getDisk()->path($this->relativePath());
-	}
-
-	public function leafPath(){
-		return $this->path;
-	}
-
 	public function __call($name, $arguments){
 		// Functions configured to call noromally
 		if (in_array($name, config('qstorage.passthrough'))) return $this->getDisk()->$name(...$arguments);
