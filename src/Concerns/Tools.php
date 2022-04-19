@@ -20,4 +20,14 @@ trait Tools
 	public static function joinCleanPaths(array $paths){
 		return join(DIRECTORY_SEPARATOR, $paths);
 	}
+
+	public static function calculateDepth(string $path){
+		return strlen($path) ? count(explode(DIRECTORY_SEPARATOR, $path)) : 0;
+	}
+
+	public static function calculateLeaf(string $path, int $depth){
+		$path_parts = explode(DIRECTORY_SEPARATOR, $path);
+		$leaf_parts = array_slice($path_parts, $depth);
+		return static::joinPaths($leaf_parts);
+	}
 }

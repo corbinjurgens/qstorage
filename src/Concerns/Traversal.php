@@ -19,6 +19,16 @@ trait Traversal
 		return $this;
 	}
 
+	protected $is_directory = true;
+
+	public function isDir(bool $is_directory = null){
+		if (isset($is_directory)) {
+			$this->is_directory = $is_directory;
+			return $this;
+		}
+		return $this->is_directory;
+	}
+
 	public function relativePath(){
 		return static::joinPaths([$this->sub, $this->path]);
 	}
@@ -35,13 +45,13 @@ trait Traversal
 		return static::joinPaths([($this->as ?? $this->path)]);
 	}
 
-	public function open($path){
+	public function open($path, $directory = false){
 		$sub = $this->relativePath();
-		return $this->clone()->sub($sub)->path($path);
+		return $this->clone()->sub($sub)->path($path)->isDir($directory);
 	}
 
 	public function folder($path){
-		return $this->open($path);
+		return $this->open($path, true);
 	}
 
 	public function file($path){
@@ -65,13 +75,13 @@ trait Traversal
 
 	public static function operationDisk(){
 		if (isset(static::$operation_disk)) return static::$operation_disk;
-		return static::$operation_disk = isset(static::$operation_disk_fetcher) ? (static::$operation_disk_fetcher)() : static::operationDiskBuild();
+		return static::$operation_disk = new static(isset(static::$operation_disk_fetcher) ? (static::$operation_disk_fetcher)() : static::operationDiskBuild());
 	}
 
 	protected static function operationDiskBuild(){
 		return app('filesystem')->createLocalDriver([
 			'driver' => 'local',
-			'root' => 'tmp',
+			'root' => '/tmp/process',
 			'visibility' => 'public'
 		]);
 	}

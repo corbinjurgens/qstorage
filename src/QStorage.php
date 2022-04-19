@@ -11,7 +11,7 @@ class QStorage {
 	use Concerns\Traversal;
 	
 	public function __construct($disk = null){
-		$this->setDisk(Storage::disk($disk));
+		$this->setDisk(is_object($disk) ? $disk : Storage::disk($disk));
 	}
 
 	public function clone(){
@@ -39,9 +39,7 @@ class QStorage {
 
 		$path = $this->relativePath();
 		array_unshift($arguments, $path);
-		$result = $this->getDisk()->$name(...$arguments);
-		if (!in_array($name, ['files', 'allFiles', 'directories', 'allDirectories'])) return $result;
-		return static::hydrateFiles($result);
+		return $this->getDisk()->$name(...$arguments);
 	}
 
 }
