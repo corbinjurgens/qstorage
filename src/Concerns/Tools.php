@@ -25,9 +25,8 @@ trait Tools
 		return strlen($path) ? count(explode(DIRECTORY_SEPARATOR, $path)) : 0;
 	}
 
-	public static function calculateLeaf(string $path, int $depth){
-		$path_parts = explode(DIRECTORY_SEPARATOR, $path);
-		$leaf_parts = array_slice($path_parts, $depth);
-		return static::joinPaths($leaf_parts);
+	public static function calculateLeaf(string $path, string $parent){
+		$length = strlen($parent);
+		return substr($path, $length ? ($length + 1) : 0);
 	}
 }

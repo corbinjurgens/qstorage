@@ -17,9 +17,8 @@ trait Files
 		$path = $this->relativePath();
 		$base->sub($path);
 
-		$depth = static::calculateDepth($path);
-		$files = array_map(function($content) use ($parent, $base, $depth){
-			return $base->clone()->path(static::calculateLeaf($content['path'], $depth))->setParent($parent)->isDir($content['type'] === 'dir');
+		$files = array_map(function($content) use ($parent, $base, $path){
+			return $base->clone()->path(static::calculateLeaf($content['path'], $path))->setParent($parent)->isDir($content['type'] === 'dir');
 		}, $contents);
 		if ($children === true) $this->setChildren($files);
 		return $files;
@@ -101,6 +100,14 @@ trait Files
 			$target = $destination->open($file->operationPath());
 			$file->isDir() ? $target->makeDirectory() : $target->writeStream($file->readStream());
 		}, $destination, $contents);
+		return $this;
+	}
+
+	public function moveDirectory(QStorage $destination, array $contents = null){
+		$contents = $contents ?? $this->allItems();
+		$this->copyDirectory($destination, $contents);
+		$this->deleteDirectory();
+		return $this;
 	}
 
 	public function zip(QStorage $destination, array $contents = null){
@@ -158,6 +165,42 @@ trait Files
 		foreach($files as $file){
 			$do($file, $destination);
 		}
+	}
+
+	public function move($to){
+		$path = $this->relativePath();
+		if ($to instanceof static){
+			if ($this->getDisk() === $to->getDisk()){
+				return $this->getDisk()->move($path, $to->relativePath);
+			}else{
+				return $this->crossDiskCopy($to, true);
+			}
+		}else{
+			return $this->getDisk()->move($path, $to);
+		}
+	}
+
+	public function copy($to){
+		$path = $this->relativePath();
+		if ($to instanceof static){
+			if ($this->getDisk() === $to->getDisk()){
+				return $this->getDisk()->copy($path, $to->relativePath);
+			}else{
+				return $this->crossDiskCopy($to, false);
+			}
+		}else{
+			return $this->getDisk()->copy($path, $to);
+		}
+	}
+
+	/**
+	 * Use stream to copy files between disks of different driver types
+	 */
+	public function crossDiskCopy(QStorage $target, $move = false){
+		$res = $this->writeStream($target->readStream());
+		if (!$res) return $res;
+		if ($move) return $this->delete();
+		return $res;
 	}
 
 }
