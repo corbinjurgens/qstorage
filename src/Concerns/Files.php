@@ -15,10 +15,10 @@ trait Files
 		$parent = $this;
 		$base = $this->clone();
 		$path = $this->relativePath();
-		$base->sub($path);
+		$base->setSub($path);
 
 		$files = array_map(function($content) use ($parent, $base, $path){
-			return $base->clone()->path(static::calculateLeaf($content['path'], $path))->setParent($parent)->isDir($content['type'] === 'dir');
+			return $base->clone()->setPath(static::calculateLeaf($content['path'], $path))->setParent($parent)->setDir($content['type'] === 'dir');
 		}, $contents);
 		if ($children === true) $this->setChildren($files);
 		return $files;
@@ -111,6 +111,7 @@ trait Files
 	}
 
 	public function zip(QStorage $destination, array $contents = null){
+		if (!$this->isDir()) throw new \Exception("You can only zip directories");
 		$process = static::operationDisk()->folder(time() . '_' .mt_rand());
 		$copy = $process->folder('contents');
 		$target = $process->file('archive.zip');
@@ -157,7 +158,7 @@ trait Files
 
 		$process->deleteDirectory();
 
-		return $destination;
+		return $this;
 	}
 
 	protected function doAll(\Closure $do, QStorage $destination, array $files = null){
@@ -169,28 +170,16 @@ trait Files
 
 	public function move($to){
 		$path = $this->relativePath();
-		if ($to instanceof static){
-			if ($this->getDisk() === $to->getDisk()){
-				return $this->getDisk()->move($path, $to->relativePath);
-			}else{
-				return $this->crossDiskCopy($to, true);
-			}
-		}else{
-			return $this->getDisk()->move($path, $to);
-		}
+		if (!$to instanceof static) return $this->getDisk()->move($path, $to);
+		if ($this->getDisk() === $to->getDisk()) return $this->getDisk()->move($path, $to->relativePath);
+		return $this->crossDiskCopy($to, true);
 	}
 
 	public function copy($to){
 		$path = $this->relativePath();
-		if ($to instanceof static){
-			if ($this->getDisk() === $to->getDisk()){
-				return $this->getDisk()->copy($path, $to->relativePath);
-			}else{
-				return $this->crossDiskCopy($to, false);
-			}
-		}else{
-			return $this->getDisk()->copy($path, $to);
-		}
+		if (!$to instanceof static) return $this->getDisk()->move($path, $to);
+		if ($this->getDisk() === $to->getDisk()) return $this->getDisk()->copy($path, $to->relativePath);
+		return $this->crossDiskCopy($to, false);
 	}
 
 	/**

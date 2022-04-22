@@ -7,34 +7,35 @@ trait Traversal
 
 	protected $sub = '';
 
-	public function sub(string $path = ''){
+	public function setSub(string $path = ''){
 		$this->sub = static::trimPath($path);
 		return $this;
 	}
 
 	protected $path = '';
 
-	public function path(string $path = ''){
+	public function setPath(string $path = ''){
 		$this->path = static::trimPath($path);
 		return $this;
 	}
 
-	protected $is_directory = true;
+	protected $dir = true;
 
-	public function isDir(bool $is_directory = null){
-		if (isset($is_directory)) {
-			$this->is_directory = $is_directory;
-			return $this;
-		}
-		return $this->is_directory;
+	public function setDir(bool $dir){
+		$this->dir = $dir;
+		return $this;
+	}
+
+	public function isDir(){
+		return $this->dir;
 	}
 
 	public function relativePath(){
-		return static::joinPaths([$this->sub, $this->path]);
+		return static::joinCleanPaths([$this->sub, $this->path]);
 	}
 
 	public function absolutePath(){
-		return $this->getDisk()->path($this->relativePath());
+		return $this->path();
 	}
 
 	public function leafPath(){
@@ -42,12 +43,12 @@ trait Traversal
 	}
 
 	public function operationPath(){
-		return static::joinPaths([($this->as ?? $this->path)]);
+		return static::joinCleanPaths([($this->as ?? $this->path)]);
 	}
 
 	public function open($path, $directory = false){
 		$sub = $this->relativePath();
-		return $this->clone()->sub($sub)->path($path)->isDir($directory);
+		return $this->clone()->setSub($sub)->setPath($path)->setDir($directory);
 	}
 
 	public function folder($path){
@@ -81,8 +82,7 @@ trait Traversal
 	protected static function operationDiskBuild(){
 		return app('filesystem')->createLocalDriver([
 			'driver' => 'local',
-			'root' => '/tmp/process',
-			'visibility' => 'public'
+			'root' => '/tmp/process'
 		]);
 	}
 }

@@ -18,7 +18,7 @@ trait Tools
 	}
 
 	public static function joinCleanPaths(array $paths){
-		return join(DIRECTORY_SEPARATOR, $paths);
+		return join(DIRECTORY_SEPARATOR, array_filter($paths, [static::class, 'filterPath']));
 	}
 
 	public static function calculateDepth(string $path){
