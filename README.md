@@ -125,5 +125,5 @@ In addition to the original 'path' function you can also use: relativePath (path
   - Cross-disk move and copy
   - Emphasis on file vs directory, can use 'isDir' to check if the retrieved items is a directory
 - 1.0.0 
- - Init
+  - Init
 
