@@ -29,4 +29,25 @@ trait Tools
 		$length = strlen($parent);
 		return substr($path, $length ? ($length + 1) : 0);
 	}
+
+	public static function walkPaths(array $paths){
+		$result = [];
+		foreach($paths as $path){
+			if (!is_string($path)){
+				continue;
+			}
+			$explode = explode(DIRECTORY_SEPARATOR, $path);
+			foreach($explode as $bit){
+				if ($bit === '') continue;
+				if ($bit === '.') continue;
+				if ($bit === '..'){
+					if (empty($result)) throw new \Exception("You can't go back any more");
+					array_pop($result);
+					continue;
+				}
+				$result[] = $bit;
+			}
+		}
+		return join(DIRECTORY_SEPARATOR, $result);
+	}
 }

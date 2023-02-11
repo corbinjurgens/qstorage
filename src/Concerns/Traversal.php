@@ -7,6 +7,9 @@ trait Traversal
 
 	protected $sub = '';
 
+	/**
+	 * Set current context
+	 */
 	public function setSub(string $path = ''){
 		$this->sub = static::trimPath($path);
 		return $this;
@@ -14,6 +17,9 @@ trait Traversal
 
 	protected $path = '';
 
+	/**
+	 * Set path to a file or folder from the current context
+	 */
 	public function setPath(string $path = ''){
 		$this->path = static::trimPath($path);
 		return $this;
@@ -30,6 +36,9 @@ trait Traversal
 		return $this->dir;
 	}
 
+	/**
+	 * Relative path of the disk
+	 */
 	public function relativePath(){
 		return static::joinCleanPaths([$this->sub, $this->path]);
 	}
@@ -57,6 +66,35 @@ trait Traversal
 
 	public function file($path){
 		return $this->open($path);
+	}
+
+	/**
+	 * Traverse like linux
+	 * 
+	 * Use a slash at the start to return to top of the disk
+	 */
+	public function cd($path = '/'){
+		if (!$this->isDir()) throw new \Exception('You should only call cd from a folder');
+		if (strpos($path, '/') === 0){
+			$result = $this->clone()->setSub(static::walkPaths([$path]))->setPath()->setDir(true);
+		}else{
+			$result = $this->clone()->setSub(static::walkPaths([$this->relativePath(), $path]))->setPath()->setDir(true);
+		}
+		return $result;
+	}
+
+	/**
+	 * To match with cd
+	 */
+	public function ls(string $path = ''){
+		if($path !== ''){
+			$relative = $this->relativePath();
+			$path = static::walkPaths([$relative, $path]);
+			return $this->open($path)->items();
+		}else{
+			return $this->items();
+		}
+		
 	}
 
 	protected $as;

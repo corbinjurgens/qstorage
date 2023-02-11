@@ -2,7 +2,7 @@
 
 namespace Corbinjurgens\QStorage;
 
-use Storage;
+use Illuminate\Support\Facades\Storage;
 
 class QStorage {
 
@@ -34,7 +34,7 @@ class QStorage {
 	}
 
 	public function __call($name, $arguments){
-		// Functions configured to call noromally
+		// Functions configured to call normally
 		if (in_array($name, config('qstorage.passthrough'))) return $this->getDisk()->$name(...$arguments);
 
 		$path = $this->relativePath();

@@ -12,13 +12,14 @@ trait Files
 	 * @return \Corbinjurgens\QStorage\QStorage[]
 	 */
 	public function hydrateFiles($contents, $children = false){
-		$parent = $this;
 		$base = $this->clone();
 		$path = $this->relativePath();
 		$base->setSub($path);
+		$base->setParent($this);
 
-		$files = array_map(function($content) use ($parent, $base, $path){
-			return $base->clone()->setPath(static::calculateLeaf($content['path'], $path))->setParent($parent)->setDir($content['type'] === 'dir');
+		$files = array_map(function($content) use ($base, $path){
+			return $base->clone()->setPath(static::calculateLeaf($content['path'], $path))->setDir($content['type'] === 'dir');
+			
 		}, $contents);
 		if ($children === true) $this->setChildren($files);
 		return $files;
@@ -96,9 +97,9 @@ trait Files
 	 */
 	public function copyDirectory(QStorage $destination, array $contents = null){
 		$contents = $contents ?? $this->allItems();
-		$this->doAll(function($file, $destination){
-			$target = $destination->open($file->operationPath());
-			$file->isDir() ? $target->makeDirectory() : $target->writeStream($file->readStream());
+		$this->doAll(function($file, QStorage $destination){
+			$target = $destination->open($file->operationPath(), $file->isDir());
+			$target->isDir() ? $target->makeDirectory() : $target->copy($file);
 		}, $destination, $contents);
 		return $this;
 	}
@@ -171,14 +172,14 @@ trait Files
 	public function move($to){
 		$path = $this->relativePath();
 		if (!$to instanceof static) return $this->getDisk()->move($path, $to);
-		if ($this->getDisk() === $to->getDisk()) return $this->getDisk()->move($path, $to->relativePath);
+		if ($this->getDisk() === $to->getDisk()) return $this->getDisk()->move($path, $to->relativePath());
 		return $this->crossDiskCopy($to, true);
 	}
 
 	public function copy($to){
 		$path = $this->relativePath();
 		if (!$to instanceof static) return $this->getDisk()->move($path, $to);
-		if ($this->getDisk() === $to->getDisk()) return $this->getDisk()->copy($path, $to->relativePath);
+		if ($this->getDisk() === $to->getDisk()) return $this->getDisk()->copy($path, $to->relativePath());
 		return $this->crossDiskCopy($to, false);
 	}
 
