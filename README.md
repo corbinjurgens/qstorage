@@ -1,129 +1,229 @@
-# Introduction
+# Q
 
-Allows you to use laravel Storage in a more object-oriented fashion. If you are like me, it feels dirty to be repeating the same paths for different operations.
+Object-oriented, identifier-bound wrappers around Laravel's `Storage` and `Cache` facades.
 
-Before:
+If repeating the same path or key on every call feels noisy, **Q** binds the identifier to an object so the path/key travels with it:
 
-```
-if (Storage::disk('data')->exists('folder/file.txt')){
-  $contents = Storage::disk('data')->get('folder/file.txt');
-  ...
-  Storage::disk('data')->put('folder/file.txt', $contents);
+```php
+// Storage — path travels with the object
+$file = QStorage::disk('data')->file('reports/2026.csv');
+if ($file->exists()) {
+    $contents = $file->get();
+    // ...
+    $file->put($contents);
 }
+
+// Cache — key travels with the object
+$counter = QCache::store('redis')->key('jobs:processed');
+$counter->put(0, 3600);
+$counter->increment();
+$counter->get();
 ```
 
-After:
+Anything not implemented directly is forwarded to the underlying disk/repository with the bound path/key auto-prepended, so the full Laravel API is still available.
 
-```
-$file = QStorage::disk('data')->file('folder/file.txt');
-if ($file->exists()){
-  $contents = $file->get();
-  ...
-  $file->put($contents);
-}
-```
+## Requirements
 
+- PHP 7.2 or higher
+- Laravel 5.5+ — CI tests Laravel 6 through 12; older versions are supported via stable Storage/Cache APIs but not exercised by the matrix.
 
 ## Installation
 
-### Composer
-
-composer require corbinjurgens/qstorage
-
-### Manual Installation
-
-Copy the following to main composer.(in the case that the package is added to packages/corbinjurgens/qform)
 ```
- "autoload": {
-	"psr-4": {
-		"Corbinjurgens\\QStorage\\": "packages/corbinjurgens/qstorage/src"
-	},
-},
-```
-and run 
-```
-composer dump-autoload
+composer require corbinjurgens/q
 ```
 
+The service provider and facade aliases (`QStorage`, `QCache`) are registered via package discovery.
 
-Add the following to config/app.php providers
-```
-Corbinjurgens\QStorage\ServiceProvider::class,
-```
-Add alias to config/app.php alias
-```
-"QStorage" => Corbinjurgens\QStorage\Facade::class,
-```
-
-# Usage
-
-## Basics
-
-Basically it can be used exactly as the usual laravel Storage system. However, all functions no longer take a path parameter.
-
-For example `Storage::get('folder/file.txt')` becomes `QStorage::file('folder/file.txt')->get()`
-
-Using 'file' sets the path. You can also use 'folder' to set path when it is a folder.
-These will open a new instance relative to the current instance and then set the new path. For example
+To publish either config file:
 
 ```
-$disk = QStorage::folder('folder');// 'folder', path is unaffected by the following lines
-$file = $disk->file('file.txt');// 'folder/file.txt'
-$file1 = $disk->file('file2.txt');// 'folder/file2.txt'
+php artisan vendor:publish --tag=qstorage-config
+php artisan vendor:publish --tag=qcache-config
 ```
 
-> Under the hood this makes use of the 'setSub' function. By opening file or folder with a path already set, it uses the current path as a prefix and builds off that.
+## QStorage
 
-If you need to access the underlying disk instance, you can use 'getDisk', eg `QStorage::disk('data')->getDisk()->...`
+### Basics
 
-## Extended Features
+`QStorage` works exactly like Laravel's `Storage` facade, except path arguments are bound to the instance instead of being passed every call:
 
-The 'move' and 'copy' functions can take a destination path as normal, or a QStorage instance. If the disk is different, it will automatically stream the file between the different disks for you.
+```php
+// Before
+Storage::disk('data')->get('folder/file.txt');
 
+// After
+QStorage::disk('data')->file('folder/file.txt')->get();
 ```
-QStorage::disk('local')->file('test.txt')->copy(QStorage::disk('s3')->file('test.txt'));
+
+`file()` and `folder()` open a new instance relative to the current one:
+
+```php
+$disk = QStorage::folder('reports');             // bound to "reports/"
+$jan  = $disk->file('2026-01.csv');              // "reports/2026-01.csv"
+$feb  = $disk->file('2026-02.csv');              // "reports/2026-02.csv"
 ```
 
-The files() and directories() functions now return a list of new QStorage instances, meaning you can chain more storage functions directly onto them. You can also use items() for both files and directories. Whether or not the results are directories is checked and set
+The underlying disk is available via `getDisk()`:
 
+```php
+QStorage::disk('s3')->getDisk()->temporaryUrl(...);
 ```
-$files = QStorage::folder('folder')->files();
-foreach($files as $file){
-	$contents = $file->get();
-	...
-	$file->put($contents);
+
+### Listing
+
+`files()`, `directories()`, `allFiles()`, `allDirectories()`, `items()`, and `allItems()` return arrays of `QStorage` instances, so you can chain operations directly:
+
+```php
+foreach (QStorage::folder('inbox')->files() as $file) {
+    $file->move('archive/' . $file->leafPath());
 }
 ```
 
+`isDir()` reports whether an item is a directory.
 
-## Added Features
+### Traversal
 
-A few functions have been added that are not available in the base Laravel Filesystem
+`cd()` and `ls()` give shell-like navigation:
 
-You may zip an entire directory by the following function:
-
-```
-$destination = QStorage::disk('s3')->file('archive.zip');
-QStorage::disk('local')->folder('test')->zip($destination);
-```
-
-It does not matter if the disks are different, it will use a shared local space to zip the file. The default location is a local driver at "/tmp/process". You can change this by setting `QStorage::$operation_disk_fetcher` as a closure in your app service provider':
-
-```
-QStorage::$operation_disk_fetcher = function(){
-  return \Storage::disk('custom');
-};
+```php
+$root = QStorage::disk('local');
+$root->cd('reports/2026')->ls();           // list files
+$root->cd('/absolute/from/disk/root');     // leading slash resets to disk root
 ```
 
-In addition to the original 'path' function you can also use: relativePath (path relative to the disk) and leafPath (path in the current 'setSub' context ie. within current folder etc). 'path' also has the alias 'absolutePath'
+### Move and copy
 
-# Changelog
+`move()` and `copy()` accept a string path or another `QStorage` instance on the same disk:
 
-- 2.0.0
-  - The 'path' function used to set the current path is changed to 'setPath', and so 'path' can be used in the original Laravel Storage way to fetch the absolute path
-  - Added Zip function
-  - Cross-disk move and copy
-  - Emphasis on file vs directory, can use 'isDir' to check if the retrieved items is a directory
-- 1.0.0 
-  - Init
+```php
+QStorage::disk('data')
+    ->file('temp/draft.txt')
+    ->copy(QStorage::disk('data')->file('archive/draft.txt'));
+```
 
+For cross-disk transfers, use Laravel's native streams:
+
+```php
+$dst->writeStream($src->readStream());
+```
+
+### Path helpers
+
+- `path()` / `absolutePath()` — full filesystem path (delegates to the disk)
+- `relativePath()` — path relative to the disk root
+- `leafPath()` — path within the current `setSub()` context
+
+### Pass-through methods
+
+Any method called on `QStorage` that isn't defined directly is forwarded to the underlying disk with the bound path inserted as the first argument. To call a method without that injection, list it in `config/qstorage.php`:
+
+```php
+'passthrough' => ['forgetDisk', 'extend'],
+```
+
+## QCache
+
+`QCache` mirrors the same idea against Laravel's cache repository. The key travels with the object:
+
+```php
+// Before
+Cache::put('user:1:profile', $data, 3600);
+$data = Cache::get('user:1:profile');
+
+// After
+$profile = QCache::key('user:1:profile');
+$profile->put($data, 3600);
+$data = $profile->get();
+```
+
+Pick a store with `store()`:
+
+```php
+QCache::store('redis')->key('queue:depth')->get();
+```
+
+### Prefixes
+
+`prefix()` namespaces a group of keys, like `folder()` for storage:
+
+```php
+$user = QCache::store('redis')->prefix('user:1');
+$user->key('name')->put('Alice', 3600);          // "user:1:name"
+$user->key('email')->put('a@x.io', 3600);        // "user:1:email"
+```
+
+`fullKey()` returns the joined `prefix:key`. `leafKey()` returns just the bound leaf.
+
+### Traversal
+
+`cd()` and `ls()` give shell-like navigation, mirroring `QStorage`:
+
+```php
+$root = QCache::store('redis');
+
+$users = $root->cd('app:users');         // bound to "app:users"
+$one   = $users->cd('1');                // "app:users:1"
+$back  = $one->cd('..');                 // "app:users"
+$abs   = $one->cd(':other');             // ":" prefix resets to root → "other"
+$reset = $one->cd();                     // no arg → root
+```
+
+`cd()` walks the **prefix** only — any bound key is dropped on the resulting instance. The leading separator (`:` by default) marks an absolute path; `..` walks one segment up.
+
+`ls()` returns the immediate children under the current prefix as new `QCache` instances:
+
+```php
+$root->key('app:users:1:name')->put('Alice', 60);
+$root->key('app:users:1:email')->put('a@x.io', 60);
+$root->key('app:users:2:name')->put('Bob', 60);
+
+foreach ($root->cd('app:users')->ls() as $child) {
+    echo $child->leafKey();              // "1", "2"
+}
+```
+
+Cache stores differ in whether keys can be enumerated, so `ls()` is best-effort:
+
+| Store     | `ls()` support |
+| --------- | --------------- |
+| `array`   | yes (in-memory introspection) |
+| `redis`   | yes (uses `SCAN MATCH "{prefix}:*"`) |
+| Anything else (`file`, `memcached`, `database`, `dynamodb`) | throws `RuntimeException` |
+
+On Redis, `ls()` uses `SCAN` rather than `KEYS`, but listing a deeply populated namespace is still an O(N-in-namespace) operation — call it with intent.
+
+### Separator
+
+The key separator defaults to `:` (Redis convention) and can be changed via `config/qcache.php`:
+
+```php
+'separator' => '.',
+```
+
+`prefix()`, `key()`, `cd()`, `ls()`, and `fullKey()` all honour the configured separator.
+
+### Tags
+
+`tags()` returns a clone bound to a tagged repository (only on stores that support tagging, e.g. redis, memcached):
+
+```php
+QCache::store('redis')->tags(['users'])->key('1:profile')->put($data, 3600);
+QCache::store('redis')->tags(['users'])->flush();
+```
+
+### Pass-through methods
+
+Methods like `flush()`, `many()`, `putMany()`, and `setEventDispatcher()` operate at the store level rather than on a single key, so they are forwarded directly without the bound key. The list lives in `config/qcache.php` and can be customised.
+
+## When to reach for something else
+
+Q is intentionally a thin ergonomic layer. For features outside that scope, use the right tool:
+
+- **Cross-disk zipping or large archives** — [`stechstudio/laravel-zipstream`](https://github.com/stechstudio/laravel-zipstream) streams archives across drivers efficiently.
+- **Cross-disk file transfer** — Laravel's native `writeStream()` / `readStream()` already handles this.
+- **Symfony users** — [`zenstruck/filesystem`](https://github.com/zenstruck/filesystem) covers similar ground.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

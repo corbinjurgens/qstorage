@@ -1,6 +1,7 @@
 {
-    "name": "corbinjurgens/qstorage",
-    "description": "Use Laravel Storage Filesystem in an object oriented fashion",
+    "name": "corbinjurgens/q",
+    "description": "Object-oriented, path-bound and key-bound wrappers around Laravel's Storage and Cache.",
+    "keywords": ["laravel", "storage", "cache", "filesystem", "object-oriented", "fluent", "wrapper"],
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -9,25 +10,40 @@
             "email": "corbinjurgens@gmail.com"
         }
     ],
-    "minimum-stability": "dev",
     "require": {
-        "laravel/framework": ">=5.0.30"
+        "php": ">=7.2",
+        "illuminate/support": "^5.5 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0",
+        "illuminate/filesystem": "^5.5 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0",
+        "illuminate/cache": "^5.5 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0 || ^5.0 || ^6.0 || ^7.0 || ^8.0 || ^9.0 || ^10.0",
+        "phpunit/phpunit": "^8.0 || ^9.0 || ^10.0 || ^11.0"
     },
     "autoload": {
         "psr-4": {
-            "Corbinjurgens\\QStorage\\": "src/"
-        },
-        "files": [
-        ]
-    },
-	"extra": {
-    "laravel": {
-        "providers": [
-            "Corbinjurgens\\QStorage\\ServiceProvider"
-        ],
-        "aliases": {
-			"QStorage": "Corbinjurgens\\QStorage\\Facade"
+            "Corbinjurgens\\Q\\": "src/"
         }
-    }
-}
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Corbinjurgens\\Q\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Corbinjurgens\\Q\\ServiceProvider"
+            ],
+            "aliases": {
+                "QStorage": "Corbinjurgens\\Q\\Facades\\QStorage",
+                "QCache": "Corbinjurgens\\Q\\Facades\\QCache"
+            }
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }

@@ -1,45 +1,53 @@
 <?php
 
-namespace Corbinjurgens\QStorage;
+namespace Corbinjurgens\Q;
 
 use Illuminate\Support\Facades\Storage;
 
-class QStorage {
+class QStorage
+{
 
 	use Concerns\Tools;
-	use Concerns\Files;
-	use Concerns\Traversal;
-	
-	public function __construct($disk = null){
-		$this->setDisk(is_object($disk) ? $disk : Storage::disk($disk));
-	}
+	use Concerns\Storage\Files;
+	use Concerns\Storage\Traversal;
 
-	public function clone(){
-		return clone $this;
-	}
+	const SEPARATOR = '/';
 
 	protected $disk;
 
-	public function setDisk($disk){
+	public function __construct($disk = null)
+	{
+		$this->setDisk(is_object($disk) ? $disk : Storage::disk($disk));
+	}
+
+	public function clone()
+	{
+		return clone $this;
+	}
+
+	public function setDisk($disk)
+	{
 		$this->disk = $disk;
 		return $this;
 	}
 
-	public function getDisk(){
+	public function getDisk()
+	{
 		return $this->disk;
 	}
 
-	public static function disk($disk = null){
+	public static function disk($disk = null)
+	{
 		return new static($disk);
 	}
 
-	public function __call($name, $arguments){
-		// Functions configured to call normally
-		if (in_array($name, config('qstorage.passthrough'))) return $this->getDisk()->$name(...$arguments);
+	public function __call($name, $arguments)
+	{
+		if (in_array($name, (array) config('qstorage.passthrough', []))) {
+			return $this->getDisk()->$name(...$arguments);
+		}
 
-		$path = $this->relativePath();
-		array_unshift($arguments, $path);
+		array_unshift($arguments, $this->relativePath());
 		return $this->getDisk()->$name(...$arguments);
 	}
-
 }
