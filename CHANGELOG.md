@@ -2,6 +2,16 @@
 
 All notable changes to this package are documented here.
 
+## Unreleased
+
+### Added
+- `QCache::cd()` for shell-style prefix traversal (`cd('users:1')`, `cd('..')`, `cd(':absolute')`, `cd()` to reset).
+- `QCache::ls()` for listing immediate children of a prefix as `QCache` instances. Supported on the `array` and `redis` stores; throws `RuntimeException` on stores that cannot enumerate keys (file, memcached, database, dynamodb).
+- Configurable key separator via `config/qcache.php` (`separator` key, defaults to `:`). Also affects `cd()` and `prefix()` segment splitting.
+
+### Changed
+- `Tools::SEPARATOR` constant access is replaced by a `static::separator()` method so subclasses can resolve it dynamically (e.g. from config). `QStorage` continues to return `/`; `QCache` reads from `qcache.separator`.
+
 ## 3.0.0 — 2026-04-26
 
 Major rewrite. The package has been renamed from `corbinjurgens/qstorage` to `corbinjurgens/q` and now wraps both `Storage` and `Cache`.

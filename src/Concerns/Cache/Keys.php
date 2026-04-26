@@ -56,4 +56,20 @@ trait Keys
 			->setPrefix(static::joinSegments([$this->fullKey(), $prefix]))
 			->setKey('');
 	}
+
+	/**
+	 * Walk to a new prefix, shell-style. A leading separator (or no argument)
+	 * resets to the root; '..' segments walk up one level. Operates on the
+	 * prefix only — any bound key is dropped on the resulting instance.
+	 */
+	public function cd($prefix = null)
+	{
+		$separator = static::separator();
+		if ($prefix === null || strpos($prefix, $separator) === 0) {
+			$walked = static::walkSegments([$prefix === null ? '' : $prefix]);
+		} else {
+			$walked = static::walkSegments([$this->prefix, $prefix]);
+		}
+		return $this->clone()->setPrefix($walked)->setKey('');
+	}
 }

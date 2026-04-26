@@ -96,4 +96,78 @@ class QCacheTest extends TestCase
 		$item = QCache::store('array')->prefix('')->key('only');
 		$this->assertSame('only', $item->fullKey());
 	}
+
+	public function test_cd_navigates_relative_absolute_and_up()
+	{
+		$root = QCache::store('array');
+
+		$users = $root->cd('app:users');
+		$this->assertSame('app:users', $users->fullKey());
+
+		$one = $users->cd('1');
+		$this->assertSame('app:users:1', $one->fullKey());
+
+		$back = $one->cd('..');
+		$this->assertSame('app:users', $back->fullKey());
+
+		$absolute = $one->cd(':other:branch');
+		$this->assertSame('other:branch', $absolute->fullKey());
+
+		$reset = $one->cd();
+		$this->assertSame('', $reset->fullKey());
+	}
+
+	public function test_cd_clears_bound_key()
+	{
+		$item = QCache::store('array')->prefix('app')->key('foo');
+		$moved = $item->cd('bar');
+
+		$this->assertSame('app:bar', $moved->fullKey());
+		$this->assertSame('', $moved->leafKey());
+	}
+
+	public function test_ls_returns_immediate_children()
+	{
+		$root = QCache::store('array');
+		$root->key('app:users:1:name')->put('Alice', 60);
+		$root->key('app:users:1:email')->put('alice@example.com', 60);
+		$root->key('app:users:2:name')->put('Bob', 60);
+		$root->key('app:posts:42')->put('hello', 60);
+
+		$top = QCache::store('array')->prefix('app');
+		$children = array_map(function ($item) {
+			return $item->leafKey();
+		}, $top->ls());
+		sort($children);
+		$this->assertSame(['posts', 'users'], $children);
+
+		$user1 = QCache::store('array')->prefix('app:users:1');
+		$leaves = array_map(function ($item) {
+			return $item->leafKey();
+		}, $user1->ls());
+		sort($leaves);
+		$this->assertSame(['email', 'name'], $leaves);
+	}
+
+	public function test_ls_throws_on_unsupported_store()
+	{
+		config()->set('cache.stores.file_for_ls', [
+			'driver' => 'file',
+			'path' => sys_get_temp_dir() . '/q-tests-cache-' . getmypid(),
+		]);
+
+		$this->expectException(\RuntimeException::class);
+		QCache::store('file_for_ls')->ls();
+	}
+
+	public function test_separator_can_be_overridden_via_config()
+	{
+		config()->set('qcache.separator', '.');
+
+		$item = QCache::store('array')->prefix('app')->key('users.1');
+		$this->assertSame('app.users.1', $item->fullKey());
+
+		$item->put('value', 60);
+		$this->assertSame('value', $item->get());
+	}
 }

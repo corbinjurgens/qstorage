@@ -5,6 +5,11 @@ namespace Corbinjurgens\Q\Concerns;
 trait Tools
 {
 
+	public static function separator()
+	{
+		return static::SEPARATOR;
+	}
+
 	public static function filterSegment($segment)
 	{
 		return is_string($segment) && strlen($segment);
@@ -12,12 +17,12 @@ trait Tools
 
 	public static function trimSegment($segment)
 	{
-		return is_string($segment) ? trim($segment, static::SEPARATOR) : $segment;
+		return is_string($segment) ? trim($segment, static::separator()) : $segment;
 	}
 
 	public static function joinSegments(array $segments)
 	{
-		return join(static::SEPARATOR, array_filter(array_map([static::class, 'trimSegment'], $segments), [static::class, 'filterSegment']));
+		return join(static::separator(), array_filter(array_map([static::class, 'trimSegment'], $segments), [static::class, 'filterSegment']));
 	}
 
 	public static function calculateLeaf($path, $parent)
@@ -33,7 +38,7 @@ trait Tools
 			if (!is_string($segment)) {
 				continue;
 			}
-			foreach (explode(static::SEPARATOR, $segment) as $bit) {
+			foreach (explode(static::separator(), $segment) as $bit) {
 				if ($bit === '' || $bit === '.') {
 					continue;
 				}
@@ -47,6 +52,6 @@ trait Tools
 				$result[] = $bit;
 			}
 		}
-		return join(static::SEPARATOR, $result);
+		return join(static::separator(), $result);
 	}
 }

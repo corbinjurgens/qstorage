@@ -155,6 +155,54 @@ $user->key('email')->put('a@x.io', 3600);        // "user:1:email"
 
 `fullKey()` returns the joined `prefix:key`. `leafKey()` returns just the bound leaf.
 
+### Traversal
+
+`cd()` and `ls()` give shell-like navigation, mirroring `QStorage`:
+
+```php
+$root = QCache::store('redis');
+
+$users = $root->cd('app:users');         // bound to "app:users"
+$one   = $users->cd('1');                // "app:users:1"
+$back  = $one->cd('..');                 // "app:users"
+$abs   = $one->cd(':other');             // ":" prefix resets to root → "other"
+$reset = $one->cd();                     // no arg → root
+```
+
+`cd()` walks the **prefix** only — any bound key is dropped on the resulting instance. The leading separator (`:` by default) marks an absolute path; `..` walks one segment up.
+
+`ls()` returns the immediate children under the current prefix as new `QCache` instances:
+
+```php
+$root->key('app:users:1:name')->put('Alice', 60);
+$root->key('app:users:1:email')->put('a@x.io', 60);
+$root->key('app:users:2:name')->put('Bob', 60);
+
+foreach ($root->cd('app:users')->ls() as $child) {
+    echo $child->leafKey();              // "1", "2"
+}
+```
+
+Cache stores differ in whether keys can be enumerated, so `ls()` is best-effort:
+
+| Store     | `ls()` support |
+| --------- | --------------- |
+| `array`   | yes (in-memory introspection) |
+| `redis`   | yes (uses `SCAN MATCH "{prefix}:*"`) |
+| Anything else (`file`, `memcached`, `database`, `dynamodb`) | throws `RuntimeException` |
+
+On Redis, `ls()` uses `SCAN` rather than `KEYS`, but listing a deeply populated namespace is still an O(N-in-namespace) operation — call it with intent.
+
+### Separator
+
+The key separator defaults to `:` (Redis convention) and can be changed via `config/qcache.php`:
+
+```php
+'separator' => '.',
+```
+
+`prefix()`, `key()`, `cd()`, `ls()`, and `fullKey()` all honour the configured separator.
+
 ### Tags
 
 `tags()` returns a clone bound to a tagged repository (only on stores that support tagging, e.g. redis, memcached):

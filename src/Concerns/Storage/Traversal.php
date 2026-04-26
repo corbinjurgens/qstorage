@@ -82,7 +82,7 @@ trait Traversal
 		if (!$this->isDir()) {
 			throw new \Exception('You should only call cd from a folder');
 		}
-		if (strpos($path, static::SEPARATOR) === 0) {
+		if (strpos($path, static::separator()) === 0) {
 			return $this->clone()->setSub(static::walkSegments([$path]))->setPath()->setDir(true);
 		}
 		return $this->clone()->setSub(static::walkSegments([$this->relativePath(), $path]))->setPath()->setDir(true);

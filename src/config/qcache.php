@@ -3,6 +3,18 @@
 return [
 	/*
 	|--------------------------------------------------------------------------
+	| Key separator
+	|--------------------------------------------------------------------------
+	|
+	| Separator used to join key segments (prefix and key) into a fully
+	| qualified cache key, and to split arguments to cd() / prefix() into
+	| segments. Defaults to ':' (Redis convention).
+	|
+	*/
+	'separator' => ':',
+
+	/*
+	|--------------------------------------------------------------------------
 	| Pass-through methods
 	|--------------------------------------------------------------------------
 	|
