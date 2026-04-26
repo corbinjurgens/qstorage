@@ -49,11 +49,11 @@ jobs:
     name: PHP ${{ matrix.php }} | Laravel ${{ matrix.laravel }}
 
     env:
-      # Composer 2.8.5+ excludes versions with open security advisories from
-      # the dependency pool, which prevents installation of older but still
-      # supported Laravel releases. CI runs against pinned EOL frameworks on
-      # purpose; disabling the audit lets the matrix resolve.
-      COMPOSER_AUDIT: 0
+      # Composer 2.9 added a security-blocking feature that excludes vulnerable
+      # versions from the dependency pool entirely. The matrix targets EOL
+      # Laravel releases on purpose, so we disable the block. Note this is a
+      # separate knob from --no-audit / COMPOSER_NO_AUDIT (composer#12607).
+      COMPOSER_NO_SECURITY_BLOCKING: 1
 
     steps:
       - uses: actions/checkout@v4
@@ -75,7 +75,7 @@ jobs:
             "orchestra/testbench:${{ matrix.testbench }}" \
             "phpunit/phpunit:${{ matrix.phpunit }}" \
             --no-interaction --no-update
-          composer update --prefer-dist --no-interaction --no-audit
+          composer update --prefer-dist --no-interaction
 
       - name: Run tests
         run: vendor/bin/phpunit
