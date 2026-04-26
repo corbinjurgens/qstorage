@@ -75,7 +75,7 @@ jobs:
             "orchestra/testbench:${{ matrix.testbench }}" \
             "phpunit/phpunit:${{ matrix.phpunit }}" \
             --no-interaction --no-update
-          composer update --prefer-dist --no-interaction
+          composer update --prefer-dist --no-interaction --no-audit
 
       - name: Run tests
         run: vendor/bin/phpunit
