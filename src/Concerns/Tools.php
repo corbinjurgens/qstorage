@@ -1,53 +1,52 @@
 <?php
 
-namespace Corbinjurgens\QStorage\Concerns;
+namespace Corbinjurgens\Q\Concerns;
 
 trait Tools
 {
 
-	public static function filterPath($path){
-		return is_string($path) && strlen($path);
+	public static function filterSegment($segment)
+	{
+		return is_string($segment) && strlen($segment);
 	}
 
-	public static function trimPath($path){
-		return is_string($path) ? trim($path, DIRECTORY_SEPARATOR) : $path;
+	public static function trimSegment($segment)
+	{
+		return is_string($segment) ? trim($segment, static::SEPARATOR) : $segment;
 	}
 
-	public static function joinPaths(array $paths){
-		return static::joinCleanPaths(array_filter(array_map([static::class, 'trimPath'], $paths), [static::class, 'filterPath']));
+	public static function joinSegments(array $segments)
+	{
+		return join(static::SEPARATOR, array_filter(array_map([static::class, 'trimSegment'], $segments), [static::class, 'filterSegment']));
 	}
 
-	public static function joinCleanPaths(array $paths){
-		return join(DIRECTORY_SEPARATOR, array_filter($paths, [static::class, 'filterPath']));
-	}
-
-	public static function calculateDepth(string $path){
-		return strlen($path) ? count(explode(DIRECTORY_SEPARATOR, $path)) : 0;
-	}
-
-	public static function calculateLeaf(string $path, string $parent){
+	public static function calculateLeaf($path, $parent)
+	{
 		$length = strlen($parent);
 		return substr($path, $length ? ($length + 1) : 0);
 	}
 
-	public static function walkPaths(array $paths){
+	public static function walkSegments(array $segments)
+	{
 		$result = [];
-		foreach($paths as $path){
-			if (!is_string($path)){
+		foreach ($segments as $segment) {
+			if (!is_string($segment)) {
 				continue;
 			}
-			$explode = explode(DIRECTORY_SEPARATOR, $path);
-			foreach($explode as $bit){
-				if ($bit === '') continue;
-				if ($bit === '.') continue;
-				if ($bit === '..'){
-					if (empty($result)) throw new \Exception("You can't go back any more");
+			foreach (explode(static::SEPARATOR, $segment) as $bit) {
+				if ($bit === '' || $bit === '.') {
+					continue;
+				}
+				if ($bit === '..') {
+					if (empty($result)) {
+						throw new \Exception("You can't go back any more");
+					}
 					array_pop($result);
 					continue;
 				}
 				$result[] = $bit;
 			}
 		}
-		return join(DIRECTORY_SEPARATOR, $result);
+		return join(static::SEPARATOR, $result);
 	}
 }
