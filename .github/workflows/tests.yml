@@ -48,6 +48,13 @@ jobs:
 
     name: PHP ${{ matrix.php }} | Laravel ${{ matrix.laravel }}
 
+    env:
+      # Composer 2.8.5+ excludes versions with open security advisories from
+      # the dependency pool, which prevents installation of older but still
+      # supported Laravel releases. CI runs against pinned EOL frameworks on
+      # purpose; disabling the audit lets the matrix resolve.
+      COMPOSER_AUDIT: 0
+
     steps:
       - uses: actions/checkout@v4
 
